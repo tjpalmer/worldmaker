@@ -1,0 +1,28 @@
+{
+  "name": "eskeleto",
+  "version": "0.2.0",
+  "description": "A skeleton project for ES/JS (well, TypeScript)",
+  "license": "CC0-1.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tjpalmer/eskeleto.git"
+  },
+  "devDependencies": {
+    "awesome-typescript-loader": "^2.1.1",
+    "css-loader": "^0.23.1",
+    "json-loader": "^0.5.4",
+    "style-loader": "^0.13.1",
+    "tslint": "^3.14.0",
+    "tslint-loader": "^2.1.5",
+    "typescript": "^2.0.0",
+    "webpack": "^1.13.1",
+    "webpack-dev-server": "^1.14.1"
+  },
+  "scripts": {
+    "prepublish": "webpack --color -p",
+    "watch": "webpack-dev-server --color -d --port 2018"
+  },
+  "dependencies": {
+    "three": "^0.80.1"
+  }
+}

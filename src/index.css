@@ -1,0 +1,10 @@
+body {
+  display: flex;
+  margin: 0;
+  align-content: stretch;
+  align-items: stretch;
+}
+
+canvas {
+  flex: 1 1 auto;
+}

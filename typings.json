@@ -1,0 +1,11 @@
+{
+  "name": "zym",
+  "dependencies": {},
+  "globalDependencies": {
+    "three": "github:DefinitelyTyped/DefinitelyTyped/threejs/three.d.ts",
+    "three-projector": "github:DefinitelyTyped/DefinitelyTyped/threejs/three-projector.d.ts",
+    "three-detector": "github:DefinitelyTyped/DefinitelyTyped/threejs/three-effectcomposer.d.ts",
+    "three-effectscomposer": "github:DefinitelyTyped/DefinitelyTyped/threejs/detector.d.ts",
+    "three-shaderpass": "github:DefinitelyTyped/DefinitelyTyped/threejs/three-shaderpass.d.ts"
+  }
+}
