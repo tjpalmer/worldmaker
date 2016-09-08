@@ -1,10 +1,11 @@
+import {Control} from './';
 import {
   AmbientLight, BufferAttribute, BufferGeometry, DirectionalLight, Mesh,
   MeshPhongMaterial, PerspectiveCamera, Scene, ShaderMaterial, SphereGeometry,
   WebGLRenderer,
 } from 'three';
 
-export class Game {
+export class Stage {
 
   camera: PerspectiveCamera;
 
@@ -48,6 +49,7 @@ export class Game {
     this.resize();
     // Scene.
     let scene = this.scene = new Scene();
+    new Control(this);
     // Ambient light.
     let ambient = new AmbientLight(0xFFFFFF, 0.2);
     scene.add(ambient);
@@ -60,7 +62,7 @@ export class Game {
     let sphereMaterial = new MeshPhongMaterial({
       color: 0x4455FF
     });
-    var noiseMaterial = new ShaderMaterial({
+    let noiseMaterial = new ShaderMaterial({
       fragmentShader: noiseShader,
     });
     let sphere = this.sphere = new Mesh(sphereGeometry, noiseMaterial);

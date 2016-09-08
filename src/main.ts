@@ -1,4 +1,4 @@
-import {Game} from './';
+import {Stage} from './';
 import './index.css';
 
 window.onload = main;
@@ -7,6 +7,6 @@ window.onload = main;
 declare function require(name: string): any;
 
 function main() {
-  let game = new Game();
-  game.start();
+  let stage = new Stage();
+  stage.start();
 }
