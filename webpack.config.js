@@ -1,6 +1,9 @@
 module.exports = {
   entry: "./src/main.ts",
   output: {filename: "app.js"},
+  externals: {
+    three: "THREE",
+  },
   module: {
     loaders: [
       {
