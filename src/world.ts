@@ -1,8 +1,8 @@
 import {Control} from './';
 import {
-  AmbientLight, BufferAttribute, BufferGeometry, DirectionalLight, Mesh,
-  MeshPhongMaterial, PerspectiveCamera, Scene, ShaderMaterial, SphereGeometry,
-  WebGLRenderer,
+  AmbientLight, BufferAttribute, BufferGeometry, DirectionalLight, Geometry,
+  Line, LineBasicMaterial, Mesh, MeshPhongMaterial, PerspectiveCamera, Scene,
+  ShaderMaterial, SphereGeometry, Vector3, WebGLRenderer,
 } from 'three';
 
 export class Stage {
@@ -66,12 +66,23 @@ export class Stage {
     });
     let sphere = this.sphere = new Mesh(sphereGeometry, noiseMaterial);
     scene.add(sphere);
+    // Rotation axis.
+    buildRotationAxis(scene);
     // buildWorld(scene);
     // Render.
     this.render();
     // requestAnimationFrame(() => this.render());
   }
 
+}
+
+function buildRotationAxis(scene: Scene) {
+  let extent = 1.1;
+  let top = new Vector3(0, 1, 0).multiplyScalar(extent);
+  let geometry = new Geometry();
+  geometry.vertices.push(top, top.clone().multiplyScalar(-1));
+  let line = new Line(geometry, new LineBasicMaterial({color: 0xFF0000}));
+  scene.add(line);
 }
 
 function buildWorld(scene: Scene) {
@@ -128,11 +139,7 @@ function buildWorld(scene: Scene) {
 //               https://github.com/ashima/webgl-noise
 //               https://github.com/stegu/webgl-noise
 // 
-let noiseShader = `
-  varying vec3 position3d;
-
-  // TODO Extract common shader utility code from this specific shader.
-
+let noiseFunctions = `
   vec3 mod289(vec3 x) {
     return x - floor(x * (1.0 / 289.0)) * 289.0;
   }
@@ -224,11 +231,18 @@ let noiseShader = `
     return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), 
                                   dot(p2,x2), dot(p3,x3) ) );
   }
+`;
+
+let noiseShader = `
+  varying vec3 position3d;
+
+  ${noiseFunctions}
 
   void main() {
     float value = 0.5 * (
-      0.6 * snoise(2.0 * position3d)
-      + 0.3 * snoise(4.0 * position3d)
+      0.5 * snoise(1.0 * position3d)
+      + 0.2 * snoise(2.0 * position3d)
+      + 0.2 * snoise(4.0 * position3d)
       + 0.1 * snoise(8.0 * position3d)
       + 1.0
     );
