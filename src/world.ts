@@ -58,12 +58,11 @@ export class Stage {
     light.position.set(-1, 1, 1);
     scene.add(light);
     // Sphere.
-    let sphereGeometry = new SphereGeometry(1, 64, 32);
-    let sphereMaterial = new MeshPhongMaterial({
-      color: 0x4455FF
-    });
+    let res = 6;
+    let sphereGeometry = new SphereGeometry(1, 2**res, 2**(res-1));
     let noiseMaterial = new ShaderMaterial({
       fragmentShader: noiseShader,
+      vertexShader: positionShader,
     });
     let sphere = this.sphere = new Mesh(sphereGeometry, noiseMaterial);
     scene.add(sphere);
@@ -130,6 +129,10 @@ function buildWorld(scene: Scene) {
 //               https://github.com/stegu/webgl-noise
 // 
 let noiseShader = `
+  varying vec3 position3d;
+
+  // TODO Extract common shader utility code from this specific shader.
+
   vec3 mod289(vec3 x) {
     return x - floor(x * (1.0 / 289.0)) * 289.0;
   }
@@ -223,12 +226,22 @@ let noiseShader = `
   }
 
   void main() {
-    float brightness = 0.5 * (
-      0.5 * snoise(2e-3 * gl_FragCoord.xyz)
-      + 0.4 * snoise(1e-2 * gl_FragCoord.xyz)
-      + 0.1 * snoise(2e-2 * gl_FragCoord.xyz)
+    float value = 0.5 * (
+      0.6 * snoise(2.0 * position3d)
+      + 0.3 * snoise(4.0 * position3d)
+      + 0.1 * snoise(8.0 * position3d)
       + 1.0
     );
-    gl_FragColor = vec4(vec3(brightness), 1.0);
+    gl_FragColor = vec4(
+      0.4 * value, 0.8 * value, 1.0 - value, 1.0
+    );
+  }
+`;
+
+let positionShader = `
+  varying vec3 position3d;
+  void main() {
+    position3d = position;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `;
