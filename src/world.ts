@@ -245,10 +245,15 @@ let worldFunctions = `
   float worldValue() {
     float value =
       0.5 * snoise(1.0 * position3d)
-      + 0.2 * snoise(2.0 * position3d)
-      + 0.15 * snoise(4.0 * position3d)
+      + 0.3 * snoise(2.0 * position3d)
+      + 0.2 * snoise(4.0 * position3d)
       + 0.1 * snoise(8.0 * position3d)
-      + 0.05 * snoise(16.0 * position3d)
+      // Make some places noisier than others.
+      + 0.5 * (snoise(4.0 * (position3d + 1e3)) + 1.0) * (
+        + 0.1 * snoise(16.0 * position3d)
+        + 0.05 * snoise(32.0 * position3d)
+        + 0.02 * snoise(64.0 * position3d)
+      )
     ;
     value -= 0.1;
     value = 1.0 / (exp(-5.0 * value) + 1.0);
