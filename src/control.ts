@@ -26,8 +26,8 @@ export class Control {
   mouseMove(event: MouseEvent) {
     if (!this.active) return;
     let delta = new Vector2(event.screenX, event.screenY).sub(this.last);
-    let size = new Vector2(window.innerWidth, window.innerHeight);
-    delta.divide(size).multiplyScalar(Math.PI);
+    let size = Math.min(window.innerWidth, window.innerHeight);
+    delta.divideScalar(size).multiplyScalar(Math.PI);
     // let lonLat = new Vector2().copy(<Vector2><any>this.cameraStartLlh);
     // lonLat.add(delta);
     // Constrain y rotation to poles.

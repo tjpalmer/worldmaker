@@ -233,19 +233,27 @@ let noiseFunctions = `
   }
 `;
 
-let noiseShader = `
-  varying vec3 position3d;
-
-  ${noiseFunctions}
-
-  void main() {
-    float value = 0.5 * (
+let worldFunctions = `
+  float worldValue() {
+    float value =
       0.5 * snoise(1.0 * position3d)
       + 0.2 * snoise(2.0 * position3d)
       + 0.2 * snoise(4.0 * position3d)
       + 0.1 * snoise(8.0 * position3d)
-      + 1.0
-    );
+    ;
+    value = 1.0 / (exp(-5.0 * value) + 1.0);
+    return 2.0 * value - 1.0;
+  }
+`;
+
+let noiseShader = `
+  varying vec3 position3d;
+
+  ${noiseFunctions}
+  ${worldFunctions}
+
+  void main() {
+    float value = 0.5 * (worldValue() + 1.0);
     gl_FragColor = vec4(
       0.4 * value, 0.8 * value, 1.0 - value, 1.0
     );
@@ -254,8 +262,13 @@ let noiseShader = `
 
 let positionShader = `
   varying vec3 position3d;
+
+  ${noiseFunctions}
+  ${worldFunctions}
+
   void main() {
     position3d = position;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    vec3 shifted = (1.0 + 1e-2 * worldValue()) * position;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(shifted, 1.0);
   }
 `;
