@@ -243,7 +243,7 @@ let noiseFunctions = `
 
 let worldFunctions = `
   float worldValue() {
-    vec3 pos = position3d + 0e1;
+    vec3 pos = position3d + 0.0;
     float value =
       0.5 * snoise(1.0 * pos)
       + 0.3 * snoise(2.0 * pos)
