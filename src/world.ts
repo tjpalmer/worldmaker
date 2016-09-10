@@ -287,7 +287,8 @@ let positionShader = `
 
   void main() {
     position3d = position;
-    float value = 1e-2 * worldValue();
+    // Chomolungma height vs earth radius.
+    float value = 1.39e-3 * worldValue();
     value = max(value, 0.0);
     vec3 shifted = (1.0 + value) * position;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(shifted, 1.0);
