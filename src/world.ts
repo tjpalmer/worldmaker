@@ -1,8 +1,9 @@
 import {Control} from './';
 import {
   AmbientLight, BufferAttribute, BufferGeometry, DirectionalLight, Geometry,
-  Line, LineBasicMaterial, Mesh, MeshPhongMaterial, PerspectiveCamera, Scene,
-  ShaderMaterial, SphereGeometry, Vector3, WebGLRenderer,
+  Line, LineBasicMaterial, Mesh, MeshBasicMaterial, MeshPhongMaterial,
+  PerspectiveCamera, Scene, ShaderMaterial, SphereBufferGeometry, Vector3,
+  WebGLRenderer,
 } from 'three';
 
 export class Stage {
@@ -58,14 +59,21 @@ export class Stage {
     light.position.set(-1, 1, 1);
     scene.add(light);
     // Sphere.
-    let res = 6;
-    let sphereGeometry = new SphereGeometry(1, 2**res, 2**(res-1));
+    let res = 8;
+    let sphereGeometry = new SphereBufferGeometry(1, 2**res, 2**(res-1));
     let noiseMaterial = new ShaderMaterial({
       fragmentShader: noiseShader,
       vertexShader: positionShader,
     });
     let sphere = this.sphere = new Mesh(sphereGeometry, noiseMaterial);
     scene.add(sphere);
+    // Water.
+    // Moved entirely to shaders.
+    // scene.add(new Mesh(sphereGeometry, new MeshBasicMaterial({
+    //   color: 0x0000FF,
+    //   opacity: 0.5,
+    //   transparent: true,
+    // })));
     // Rotation axis.
     buildRotationAxis(scene);
     // buildWorld(scene);
@@ -238,9 +246,11 @@ let worldFunctions = `
     float value =
       0.5 * snoise(1.0 * position3d)
       + 0.2 * snoise(2.0 * position3d)
-      + 0.2 * snoise(4.0 * position3d)
+      + 0.15 * snoise(4.0 * position3d)
       + 0.1 * snoise(8.0 * position3d)
+      + 0.05 * snoise(16.0 * position3d)
     ;
+    value -= 0.1;
     value = 1.0 / (exp(-5.0 * value) + 1.0);
     return 2.0 * value - 1.0;
   }
@@ -253,10 +263,13 @@ let noiseShader = `
   ${worldFunctions}
 
   void main() {
-    float value = 0.5 * (worldValue() + 1.0);
-    gl_FragColor = vec4(
-      0.4 * value, 0.8 * value, 1.0 - value, 1.0
-    );
+    float value = worldValue();
+    float unit = 0.5 * (value + 1.0);
+    float sub = 0.5 * step(0.0, -value) + step(0.0, value);
+    float red = 0.4 * unit * sub;
+    float green = 0.8 * unit * sub;
+    float blue = 0.7 * step(0.0, -value) + 0.1 * step(0.0, value);
+    gl_FragColor = vec4(red, green, blue, 1.0);
   }
 `;
 
@@ -268,7 +281,9 @@ let positionShader = `
 
   void main() {
     position3d = position;
-    vec3 shifted = (1.0 + 1e-2 * worldValue()) * position;
+    float value = 1e-2 * worldValue();
+    value = max(value, 0.0);
+    vec3 shifted = (1.0 + value) * position;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(shifted, 1.0);
   }
 `;
