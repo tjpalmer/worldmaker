@@ -12,10 +12,9 @@ export class Stage {
   camera: PerspectiveCamera;
 
   buildTextureTarget() {
-    // let targetRes = Math.min(11, Math.ceil(Math.log(
-    //   Math.max(window.screen.width, window.screen.height)
-    // ) / Math.log(2)));
-    let targetRes = 11;
+    let targetRes = 1 + Math.ceil(Math.log(
+      Math.max(window.screen.width, window.screen.height)
+    ) / Math.log(2));
     this.target = new WebGLRenderTarget(2**targetRes, 2**(targetRes-1));
     let textureScene = new Scene();
     textureScene.add(new Mesh(
@@ -29,15 +28,15 @@ export class Stage {
       -Math.PI, Math.PI, Math.PI / 2, -Math.PI / 2, -1e5, 1e5,
     );
     textureCamera.position.z = 1;
-    this.renderer.render(textureScene, textureCamera); //, this.target);
+    // this.renderer.render(textureScene, textureCamera);  // To screen.
+    this.renderer.render(textureScene, textureCamera, this.target);
   }
 
   render() {
     // Prep next frame first for best fps.
     // requestAnimationFrame(() => this.render());
     // Render scene.
-    // this.renderer.clear();
-    // this.renderer.render(this.scene, this.camera);
+    this.renderer.render(this.scene, this.camera);
   }
 
   renderer: WebGLRenderer;
@@ -57,9 +56,7 @@ export class Stage {
   start() {
     // js tutorial code for now.
     // Renderer.
-    let renderer = this.renderer =
-      new WebGLRenderer({antialias: true, preserveDrawingBuffer: true});
-    renderer.autoClear = false;
+    let renderer = this.renderer = new WebGLRenderer({antialias: true});
     document.body.appendChild(renderer.domElement);
     // Camera.
     this.camera = new PerspectiveCamera(
@@ -74,10 +71,10 @@ export class Stage {
     new Control(this);
     this.buildTextureTarget();
     // Ambient light.
-    let ambient = new AmbientLight(0xFFFFFF, 0.2);
+    let ambient = new AmbientLight(0xFFFFFF, 0.5);
     scene.add(ambient);
     // Directional light.
-    let light = new DirectionalLight(0xFFFFFF, 0.7);
+    let light = new DirectionalLight(0xFFFFFF, 0.5);
     light.position.set(-1, 1, 1);
     scene.add(light);
     // Sphere.
