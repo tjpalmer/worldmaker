@@ -2,8 +2,9 @@ import {Control} from './';
 import {
   AmbientLight, BufferAttribute, BufferGeometry, DirectionalLight, Geometry,
   Line, LineBasicMaterial, Mesh, MeshBasicMaterial, MeshPhongMaterial,
-  PlaneBufferGeometry, PerspectiveCamera, Scene, ShaderMaterial,
-  SphereBufferGeometry, Vector3, WebGLRenderer, WebGLRenderTarget,
+  OrthographicCamera, PlaneBufferGeometry, PerspectiveCamera, Scene,
+  ShaderMaterial, SphereBufferGeometry, Vector3, WebGLRenderer,
+  WebGLRenderTarget,
 } from 'three';
 
 export class Stage {
@@ -18,20 +19,25 @@ export class Stage {
     this.target = new WebGLRenderTarget(2**targetRes, 2**(targetRes-1));
     let textureScene = new Scene();
     textureScene.add(new Mesh(
-      new PlaneBufferGeometry(this.target.width, this.target.height),
-      new ShaderMaterial({}),
+      new PlaneBufferGeometry(2 * Math.PI, Math.PI),
+      new ShaderMaterial({
+        fragmentShader: noiseTextureShader,
+        vertexShader: positionTextureShader,
+      }),
     ));
-    // let textureCamera
+    let textureCamera = new OrthographicCamera(
+      -Math.PI, Math.PI, Math.PI / 2, -Math.PI / 2, -1e5, 1e5,
+    );
+    textureCamera.position.z = 1;
+    this.renderer.render(textureScene, textureCamera); //, this.target);
   }
 
   render() {
     // Prep next frame first for best fps.
     // requestAnimationFrame(() => this.render());
-    // Texture render.
-    // this.renderer.clear();
     // Render scene.
-    this.renderer.clear();
-    this.renderer.render(this.scene, this.camera);
+    // this.renderer.clear();
+    // this.renderer.render(this.scene, this.camera);
   }
 
   renderer: WebGLRenderer;
@@ -81,7 +87,9 @@ export class Stage {
       fragmentShader: noiseShader,
       vertexShader: positionShader,
     });
-    let sphere = this.sphere = new Mesh(sphereGeometry, noiseMaterial);
+    let textureMaterial = new MeshPhongMaterial({map: this.target.texture});
+    let sphere = this.sphere = new Mesh(sphereGeometry, textureMaterial);
+    // let sphere = this.sphere = new Mesh(sphereGeometry, noiseMaterial);
     scene.add(sphere);
     // Rotation axis.
     buildRotationAxis(scene);
@@ -258,7 +266,13 @@ let noiseTextureShader = `
 
   void main() {
     vec3 pos = position3d;
-    // TODO(tjp): Calculate 3D pos from x lon, y lat.
+    // Calculate 3D pos from x lon, y lat.
+    // First rotate up.
+    float y = sin(pos.y);
+    float r = cos(pos.y);
+    // Then rotate around.
+    vec2 xz = r * vec2(cos(pos.x), sin(pos.x));
+    pos = vec3(xz.x, y, xz.y);
     gl_FragColor = vec4(worldRgb(pos), 1.0);
   }
 `;
@@ -273,5 +287,14 @@ let positionShader = `
     value = max(value, 0.0);
     vec3 shifted = (1.0 + value) * position;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(shifted, 1.0);
+  }
+`;
+
+let positionTextureShader = `
+  ${worldFunctions}
+
+  void main() {
+    position3d = position;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `;
