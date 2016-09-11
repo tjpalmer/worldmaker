@@ -2,18 +2,33 @@ import {Control} from './';
 import {
   AmbientLight, BufferAttribute, BufferGeometry, DirectionalLight, Geometry,
   Line, LineBasicMaterial, Mesh, MeshBasicMaterial, MeshPhongMaterial,
-  PerspectiveCamera, Scene, ShaderMaterial, SphereBufferGeometry, Vector3,
-  WebGLRenderer,
+  PlaneBufferGeometry, PerspectiveCamera, Scene, ShaderMaterial,
+  SphereBufferGeometry, Vector3, WebGLRenderer, WebGLRenderTarget,
 } from 'three';
 
 export class Stage {
 
   camera: PerspectiveCamera;
 
+  buildTextureTarget() {
+    // let targetRes = Math.min(11, Math.ceil(Math.log(
+    //   Math.max(window.screen.width, window.screen.height)
+    // ) / Math.log(2)));
+    let targetRes = 11;
+    this.target = new WebGLRenderTarget(2**targetRes, 2**(targetRes-1));
+    let textureScene = new Scene();
+    textureScene.add(new Mesh(
+      new PlaneBufferGeometry(this.target.width, this.target.height),
+      new ShaderMaterial({}),
+    ));
+    // let textureCamera
+  }
+
   render() {
-    // js tutorial code for now.
     // Prep next frame first for best fps.
     // requestAnimationFrame(() => this.render());
+    // Texture render.
+    // this.renderer.clear();
     // Render scene.
     this.renderer.clear();
     this.renderer.render(this.scene, this.camera);
@@ -51,6 +66,7 @@ export class Stage {
     // Scene.
     let scene = this.scene = new Scene();
     new Control(this);
+    this.buildTextureTarget();
     // Ambient light.
     let ambient = new AmbientLight(0xFFFFFF, 0.2);
     scene.add(ambient);
@@ -67,20 +83,16 @@ export class Stage {
     });
     let sphere = this.sphere = new Mesh(sphereGeometry, noiseMaterial);
     scene.add(sphere);
-    // Water.
-    // Moved entirely to shaders.
-    // scene.add(new Mesh(sphereGeometry, new MeshBasicMaterial({
-    //   color: 0x0000FF,
-    //   opacity: 0.5,
-    //   transparent: true,
-    // })));
     // Rotation axis.
     buildRotationAxis(scene);
-    // buildWorld(scene);
     // Render.
     this.render();
     // requestAnimationFrame(() => this.render());
   }
+
+  target: WebGLRenderTarget;
+
+  targetScene: Scene;
 
 }
 
@@ -91,49 +103,6 @@ function buildRotationAxis(scene: Scene) {
   geometry.vertices.push(top, top.clone().multiplyScalar(-1));
   let line = new Line(geometry, new LineBasicMaterial({color: 0xFF0000}));
   scene.add(line);
-}
-
-function buildWorld(scene: Scene) {
-  // TODO Build basic lat-lon. Use proj4?
-  // TODO I left this unfinished, eh?
-  let geometry = new BufferGeometry();
-  // Make elevations.
-  // TODO Extract to subdivide.
-  // TODO Make a GPU version of everything.
-  let dims = [3, 4];
-  let elevations = new Float32Array(dims[0] * dims[1]);
-  for (let latIndex = 0; latIndex < dims[0]; ++latIndex) {
-    for (let lonIndex = 0; lonIndex < dims[1]; ++lonIndex) {
-      elevations[latIndex * dims[1]] = 1;
-    }
-  }
-  // Make points.
-  let rowCount = dims[0] - 1;
-  let points = new Float32Array(rowCount * dims[1] * 6);
-  let index = 0;
-  for (let latIndex = 0; latIndex < rowCount; ++latIndex) {
-    let lat0 = -0.5 + latIndex / rowCount;
-    let lat1 = -0.5 + (latIndex + 1) / rowCount;
-    for (let lonIndex = 0; lonIndex < dims[1]; ++lonIndex) {
-      // let lon0 = -1 + 
-    }
-  }
-  // create a simple square shape. We duplicate the top left and bottom right
-  // vertices because each vertex needs to appear once per triangle.
-  let vertices = new Float32Array( [
-    -1.0, -1.0,  -1.0,
-    1.0, -1.0,  -1.0,
-    1.0,  1.0,  -1.0,
-
-    1.0,  1.0,  -1.0,
-    -1.0,  1.0,  -1.0,
-    -1.0, -1.0,  -1.0
-  ] );
-  // itemSize = 3 because there are 3 values (components) per vertex
-  geometry.addAttribute( 'position', new BufferAttribute( vertices, 3 ) );
-  let material = new MeshPhongMaterial( { color: 0xff0000 } );
-  let mesh = new Mesh( geometry, material );
-  scene.add(mesh);
 }
 
 //
@@ -242,8 +211,12 @@ let noiseFunctions = `
 `;
 
 let worldFunctions = `
-  float worldValue() {
-    vec3 pos = position3d + 0.0;
+  varying vec3 position3d;
+
+  ${noiseFunctions}
+
+  float worldValue(vec3 pos) {
+    pos += 0.0;
     float value =
       0.5 * snoise(1.0 * pos)
       + 0.3 * snoise(2.0 * pos)
@@ -260,35 +233,43 @@ let worldFunctions = `
     value = 1.0 / (exp(-5.0 * value) + 1.0);
     return 2.0 * value - 1.0;
   }
-`;
 
-let noiseShader = `
-  varying vec3 position3d;
-
-  ${noiseFunctions}
-  ${worldFunctions}
-
-  void main() {
-    float value = worldValue();
+  vec3 worldRgb(vec3 pos) {
+    float value = worldValue(pos);
     float unit = 0.5 * (value + 1.0);
     float sub = 0.5 * step(0.0, -value) + step(0.0, value);
     float red = 0.4 * unit * sub;
     float green = 0.8 * unit * sub;
     float blue = 0.7 * step(0.0, -value) + 0.1 * step(0.0, value);
-    gl_FragColor = vec4(red, green, blue, 1.0);
+    return vec3(red, green, blue);
+  }
+`;
+
+let noiseShader = `
+  ${worldFunctions}
+
+  void main() {
+    gl_FragColor = vec4(worldRgb(position3d), 1.0);
+  }
+`;
+
+let noiseTextureShader = `
+  ${worldFunctions}
+
+  void main() {
+    vec3 pos = position3d;
+    // TODO(tjp): Calculate 3D pos from x lon, y lat.
+    gl_FragColor = vec4(worldRgb(pos), 1.0);
   }
 `;
 
 let positionShader = `
-  varying vec3 position3d;
-
-  ${noiseFunctions}
   ${worldFunctions}
 
   void main() {
     position3d = position;
     // Chomolungma height vs earth radius.
-    float value = 1.39e-3 * worldValue();
+    float value = 1.39e-3 * worldValue(position);
     value = max(value, 0.0);
     vec3 shifted = (1.0 + value) * position;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(shifted, 1.0);
