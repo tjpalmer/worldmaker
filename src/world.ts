@@ -47,6 +47,9 @@ export class Stage {
     this.camera.aspect = size.x / size.y;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(size.x, size.y);
+    if (this.scene) {
+      this.render();
+    }
   }
 
   scene: Scene;
