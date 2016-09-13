@@ -223,7 +223,7 @@ let worldFunctions = `
 
   ${noiseFunctions}
 
-  float worldValue(vec3 pos) {
+  float worldValue(vec3 pos, float offset) {
     pos += 0.0;
     float value =
       0.5 * snoise(1.0 * pos)
@@ -237,19 +237,33 @@ let worldFunctions = `
         + 0.02 * snoise(64.0 * pos)
       )
     ;
-    value -= 0.1;
+    value += offset;
     value = 1.0 / (exp(-5.0 * value) + 1.0);
     return 2.0 * value - 1.0;
   }
 
+  float iceValue(vec3 pos) {
+    float offset = 1.0 * (smoothstep(0.85, 0.95, abs(pos.y)) - 0.5);
+    float value = worldValue(pos + 0.01, offset);
+    return value;
+  }
+
+  float landValue(vec3 pos) {
+    return worldValue(pos, -0.1);
+  }
+
   vec3 worldRgb(vec3 pos) {
-    float value = worldValue(pos);
+    // TODO Change this into clear gradients and boundaries.
+    float value = landValue(pos);
     float unit = 0.5 * (value + 1.0);
     float sub = 0.5 * step(0.0, -value) + step(0.0, value);
     float red = 0.4 * unit * sub;
     float green = 0.8 * unit * sub;
     float blue = 0.7 * step(0.0, -value) + 0.1 * step(0.0, value);
-    return vec3(red, green, blue);
+    vec3 rgb = vec3(red, green, blue);
+    float ice = iceValue(pos);
+    rgb = step(0.0, ice) * (1.0 - rgb) + rgb;
+    return rgb;
   }
 `;
 
@@ -283,7 +297,7 @@ let positionShader = `
   void main() {
     position3d = position;
     // Chomolungma height vs earth radius.
-    float value = 1.39e-3 * worldValue(position);
+    float value = 1.39e-3 * landValue(position);
     value = max(value, 0.0);
     vec3 shifted = (1.0 + value) * position;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(shifted, 1.0);
