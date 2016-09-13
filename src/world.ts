@@ -243,8 +243,16 @@ let worldFunctions = `
   }
 
   float iceValue(vec3 pos) {
-    float offset = 1.0 * (smoothstep(0.85, 0.95, abs(pos.y)) - 0.5);
-    float value = worldValue(pos + 0.01, offset);
+    float pure = 0.95;
+    float less = 0.85;
+    float none = 0.8;
+    float offset = 1.0 * (smoothstep(less, pure, abs(pos.y)) - 0.5);
+    offset -=
+      // Below less.
+      (1.0 - step(less, abs(pos.y))) *
+      // Gradually make the negative more extreme until none.
+      (1.0 - smoothstep(none, less, abs(pos.y)));
+    float value = worldValue(pos, offset);
     return value;
   }
 
@@ -263,6 +271,9 @@ let worldFunctions = `
     vec3 rgb = vec3(red, green, blue);
     float ice = iceValue(pos);
     rgb = step(0.0, ice) * (1.0 - rgb) + rgb;
+    if (step(0.0, ice) > 0.0) {
+      rgb *= ice + 0.8 * (1.0 - ice);
+    }
     return rgb;
   }
 `;
