@@ -256,11 +256,18 @@ let worldFunctions = `
     return value;
   }
 
+  vec4 iceColor(vec3 pos) {
+    float value = iceValue(pos);
+    float low = 0.8;
+    float gray = value + low * (1.0 - value);
+    return vec4(vec3(gray), step(low, gray));
+  }
+
   float landValue(vec3 pos) {
     return worldValue(pos, -0.1);
   }
 
-  vec3 worldRgb(vec3 pos) {
+  vec4 landColor(vec3 pos) {
     // TODO Change this into clear gradients and boundaries.
     float value = landValue(pos);
     float unit = 0.5 * (value + 1.0);
@@ -268,13 +275,14 @@ let worldFunctions = `
     float red = 0.4 * unit * sub;
     float green = 0.8 * unit * sub;
     float blue = 0.7 * step(0.0, -value) + 0.1 * step(0.0, value);
-    vec3 rgb = vec3(red, green, blue);
-    float ice = iceValue(pos);
-    rgb = step(0.0, ice) * (1.0 - rgb) + rgb;
-    if (step(0.0, ice) > 0.0) {
-      rgb *= ice + 0.8 * (1.0 - ice);
-    }
-    return rgb;
+    return vec4(red, green, blue, 1.0);
+  }
+
+  vec4 worldColor(vec3 pos) {
+    vec4 color = landColor(pos);
+    vec4 next = iceColor(pos);
+    color = vec4(mix(color.xyz, next.xyz, next.w), 1.0);
+    return color;
   }
 `;
 
@@ -282,7 +290,7 @@ let noiseShader = `
   ${worldFunctions}
 
   void main() {
-    gl_FragColor = vec4(worldRgb(position3d), 1.0);
+    gl_FragColor = worldColor(position3d);
   }
 `;
 
@@ -298,7 +306,7 @@ let noiseTextureShader = `
     // Then rotate around.
     vec2 xz = r * vec2(cos(pos.x), sin(pos.x));
     pos = vec3(xz.x, y, xz.y);
-    gl_FragColor = vec4(worldRgb(pos), 1.0);
+    gl_FragColor = worldColor(pos);
   }
 `;
 
