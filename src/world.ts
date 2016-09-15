@@ -20,7 +20,8 @@ export class Stage {
     textureScene.add(new Mesh(
       new PlaneBufferGeometry(2 * Math.PI, Math.PI),
       new ShaderMaterial({
-        fragmentShader: noiseTextureShader,
+        // fragmentShader: colorTextureShader,
+        fragmentShader: elevationTextureShader,
         vertexShader: positionTextureShader,
       }),
     ));
@@ -84,7 +85,7 @@ export class Stage {
     let res = 8;
     let sphereGeometry = new SphereBufferGeometry(1, 2**res, 2**(res-1));
     let noiseMaterial = new ShaderMaterial({
-      fragmentShader: noiseShader,
+      fragmentShader: colorShader,
       vertexShader: positionShader,
     });
     let textureMaterial = new MeshPhongMaterial({map: this.target.texture});
@@ -263,8 +264,20 @@ let worldFunctions = `
     return vec4(vec3(gray), step(low, gray));
   }
 
+  float iceElevation(vec3 pos) {
+    // TODO Improve ice for over land vs over water.
+    vec4 ice = iceColor(pos);
+    // TODO How to avoid knowing the low gray value for ice here?
+    // TODO Would it be a uniform?
+    return (ice.x - 0.8) * 5.0;
+  }
+
   float landValue(vec3 pos) {
     return worldValue(pos, -0.1);
+  }
+
+  float landElevation(vec3 pos) {
+    return max(landValue(pos), 0.0);
   }
 
   vec4 landColor(vec3 pos) {
@@ -284,20 +297,14 @@ let worldFunctions = `
     color = vec4(mix(color.xyz, next.xyz, next.w), 1.0);
     return color;
   }
-`;
 
-let noiseShader = `
-  ${worldFunctions}
-
-  void main() {
-    gl_FragColor = worldColor(position3d);
+  float worldElevation(vec3 pos) {
+    float elevation = landElevation(pos);
+    elevation = max(elevation, iceElevation(pos));
+    return elevation;
   }
-`;
 
-let noiseTextureShader = `
-  ${worldFunctions}
-
-  void main() {
+  vec3 calcPosition3d() {
     vec3 pos = position3d;
     // Calculate 3D pos from x lon, y lat.
     // First rotate up.
@@ -306,7 +313,33 @@ let noiseTextureShader = `
     // Then rotate around.
     vec2 xz = r * vec2(cos(pos.x), sin(pos.x));
     pos = vec3(xz.x, y, xz.y);
+    return pos;
+  }
+`;
+
+let colorShader = `
+  ${worldFunctions}
+
+  void main() {
+    gl_FragColor = worldColor(position3d);
+  }
+`;
+
+let colorTextureShader = `
+  ${worldFunctions}
+
+  void main() {
+    vec3 pos = calcPosition3d();
     gl_FragColor = worldColor(pos);
+  }
+`;
+
+let elevationTextureShader = `
+  ${worldFunctions}
+
+  void main() {
+    vec3 pos = calcPosition3d();
+    gl_FragColor = vec4(vec3(worldElevation(pos)), 1.0);
   }
 `;
 
@@ -327,6 +360,9 @@ let positionTextureShader = `
   ${worldFunctions}
 
   void main() {
+    // Position3d is a misnomer here.
+    // We can't calculate 3d until later, or we'd lose the curve.
+    // TODO Rename?
     position3d = position;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
