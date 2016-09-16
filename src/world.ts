@@ -9,29 +9,36 @@ import {
 
 export class Stage {
 
-  camera: PerspectiveCamera;
-
   buildTextureTarget() {
     let targetRes = 1 + Math.ceil(Math.log(
       Math.max(window.screen.width, window.screen.height)
     ) / Math.log(2));
-    this.target = new WebGLRenderTarget(2**targetRes, 2**(targetRes-1));
     let textureScene = new Scene();
+    let textureMaterial = new ShaderMaterial({
+      fragmentShader: colorTextureShader,
+      vertexShader: positionTextureShader,
+    });
     textureScene.add(new Mesh(
-      new PlaneBufferGeometry(2 * Math.PI, Math.PI),
-      new ShaderMaterial({
-        // fragmentShader: colorTextureShader,
-        fragmentShader: elevationTextureShader,
-        vertexShader: positionTextureShader,
-      }),
+      new PlaneBufferGeometry(2 * Math.PI, Math.PI), textureMaterial,
     ));
     let textureCamera = new OrthographicCamera(
       -Math.PI, Math.PI, Math.PI / 2, -Math.PI / 2, -1e5, 1e5,
     );
     textureCamera.position.z = 1;
     // this.renderer.render(textureScene, textureCamera);  // To screen.
+    this.target = new WebGLRenderTarget(2**targetRes, 2**(targetRes-1));
     this.renderer.render(textureScene, textureCamera, this.target);
+    // Elevation map.
+    this.elevationTarget =
+      new WebGLRenderTarget(2**targetRes, 2**(targetRes-1));
+    textureMaterial.fragmentShader = elevationTextureShader;
+    textureMaterial.needsUpdate = true;
+    this.renderer.render(textureScene, textureCamera, this.elevationTarget);
   }
+
+  camera: PerspectiveCamera;
+
+  elevationTarget: WebGLRenderTarget;
 
   render() {
     // Prep next frame first for best fps.
@@ -88,7 +95,15 @@ export class Stage {
       fragmentShader: colorShader,
       vertexShader: positionShader,
     });
-    let textureMaterial = new MeshPhongMaterial({map: this.target.texture});
+    // Chomolungma height vs earth radius.
+    let elevationScale = 1.39e-3;
+    let textureMaterial = new MeshPhongMaterial({
+      bumpMap: this.elevationTarget.texture,
+      bumpScale: elevationScale * 1e1,
+      displacementMap: this.elevationTarget.texture,
+      displacementScale: elevationScale,
+      map: this.target.texture,
+    });
     let sphere = this.sphere = new Mesh(sphereGeometry, textureMaterial);
     // let sphere = this.sphere = new Mesh(sphereGeometry, noiseMaterial);
     scene.add(sphere);
