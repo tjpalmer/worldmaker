@@ -250,6 +250,8 @@ let worldFunctions = `
 
   ${noiseFunctions}
 
+  float landValue(vec3 pos);
+
   float worldValue(vec3 pos, float offset) {
     pos += 0.0;
     float value =
@@ -288,7 +290,14 @@ let worldFunctions = `
     float value = iceValue(pos);
     float low = 0.8;
     float gray = value + low * (1.0 - value);
-    return vec4(vec3(gray), step(low, gray));
+    vec3 color = vec3(gray);
+    float land = landValue(pos);
+    if (land <= 0.0) {
+      color *= vec3(0.95, 0.95, 1.0);
+    } else {
+      color *= 0.95;
+    }
+    return vec4(color, step(low, gray));
   }
 
   float iceElevation(vec3 pos) {
@@ -296,7 +305,12 @@ let worldFunctions = `
     vec4 ice = iceColor(pos);
     // TODO How to avoid knowing the low gray value for ice here?
     // TODO Would it be a uniform?
-    return (ice.x - 0.8) * 5.0;
+    float elevation = (ice.x - 0.8) * 5.0;
+    float land = landValue(pos);
+    if (land <= 0.0) {
+      elevation *= 0.4;
+    }
+    return elevation;
   }
 
   float landValue(vec3 pos) {
