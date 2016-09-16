@@ -3,19 +3,16 @@ import {
   AmbientLight, BufferAttribute, BufferGeometry, DirectionalLight, Geometry,
   Line, LineBasicMaterial, Mesh, MeshBasicMaterial, MeshPhongMaterial,
   OrthographicCamera, PlaneBufferGeometry, PerspectiveCamera, Scene,
-  ShaderMaterial, SphereBufferGeometry, Vector3, WebGLRenderer,
+  ShaderMaterial, SphereBufferGeometry, Vector2, Vector3, WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
 
 export class Stage {
 
   buildTextureTarget() {
-    let targetRes = 1 + Math.ceil(Math.log(
-      Math.max(window.screen.width, window.screen.height)
-    ) / Math.log(2));
+    // Texture scene.
     let textureScene = new Scene();
     let textureMaterial = new ShaderMaterial({
-      fragmentShader: colorTextureShader,
       vertexShader: positionTextureShader,
     });
     textureScene.add(new Mesh(
@@ -25,15 +22,25 @@ export class Stage {
       -Math.PI, Math.PI, Math.PI / 2, -Math.PI / 2, -1e5, 1e5,
     );
     textureCamera.position.z = 1;
-    // this.renderer.render(textureScene, textureCamera);  // To screen.
-    this.target = new WebGLRenderTarget(2**targetRes, 2**(targetRes-1));
-    this.renderer.render(textureScene, textureCamera, this.target);
-    // Elevation map.
-    this.elevationTarget =
-      new WebGLRenderTarget(2**targetRes, 2**(targetRes-1));
-    textureMaterial.fragmentShader = elevationTextureShader;
-    textureMaterial.needsUpdate = true;
-    this.renderer.render(textureScene, textureCamera, this.elevationTarget);
+    // Texture size.
+    let targetRes = 1 + Math.ceil(Math.log(
+      Math.max(window.screen.width, window.screen.height)
+    ) / Math.log(2));
+    let size = new Vector2(2**targetRes, 2**(targetRes-1));
+    // Render textures.
+    let renderTexture = (name: string, shader: string, toScreen = false) => {
+      (<any>this)[name] =
+        new WebGLRenderTarget(size.x, size.y);
+      textureMaterial.fragmentShader = shader;
+      textureMaterial.needsUpdate = true;
+      this.renderer.render(textureScene, textureCamera, (<any>this)[name]);
+      if (toScreen) {
+        this.renderer.render(textureScene, textureCamera);
+      }
+    };
+    renderTexture('target', colorTextureShader);
+    renderTexture('elevationTarget', elevationTextureShader);
+    renderTexture('specularTarget', specularTextureShader);
   }
 
   camera: PerspectiveCamera;
@@ -61,6 +68,8 @@ export class Stage {
   }
 
   scene: Scene;
+
+  specularTarget: WebGLRenderTarget;
 
   sphere: Mesh;
 
@@ -96,13 +105,15 @@ export class Stage {
       vertexShader: positionShader,
     });
     // Chomolungma height vs earth radius.
-    let elevationScale = 1.39e-3;
+    let elevationScale = 1.39e-2;
     let textureMaterial = new MeshPhongMaterial({
       bumpMap: this.elevationTarget.texture,
-      bumpScale: elevationScale * 1e1,
+      bumpScale: elevationScale,
       displacementMap: this.elevationTarget.texture,
       displacementScale: elevationScale,
       map: this.target.texture,
+      shininess: 50,
+      specularMap: this.specularTarget.texture,
     });
     let sphere = this.sphere = new Mesh(sphereGeometry, textureMaterial);
     // let sphere = this.sphere = new Mesh(sphereGeometry, noiseMaterial);
@@ -247,15 +258,16 @@ let worldFunctions = `
       + 0.2 * snoise(4.0 * pos)
       + 0.1 * snoise(8.0 * pos)
       // Make some places noisier than others.
-      + 0.5 * (snoise(4.0 * (pos + 1e3)) + 1.0) * (
+      + 0.5 * (snoise(4.0 * (pos + 1e3)) + 1.2) * (
         + 0.1 * snoise(16.0 * pos)
         + 0.05 * snoise(32.0 * pos)
         + 0.02 * snoise(64.0 * pos)
       )
     ;
     value += offset;
-    value = 1.0 / (exp(-5.0 * value) + 1.0);
-    return 2.0 * value - 1.0;
+    // value = 1.0 / (exp(-5.0 * value) + 1.0);
+    // value = 2.0 * value - 1.0;
+    return value;
   }
 
   float iceValue(vec3 pos) {
@@ -380,5 +392,17 @@ let positionTextureShader = `
     // TODO Rename?
     position3d = position;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+let specularTextureShader = `
+  ${worldFunctions}
+
+  void main() {
+    vec3 pos = calcPosition3d();
+    // TODO Separate explicit water function once we have land below sea.
+    float specular = step(0.0, -landValue(pos));
+    specular = iceValue(pos) > 0.0 ? 0.5 : specular;
+    gl_FragColor = vec4(vec3(specular), 1.0);
   }
 `;
