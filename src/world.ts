@@ -24,7 +24,7 @@ export class Stage {
     textureCamera.position.z = 1;
     // Texture size.
     // TODO(tjp): Change from 0 to 1 for full res.
-    let targetRes = 0 + Math.ceil(Math.log(
+    let targetRes = 1 + Math.ceil(Math.log(
       Math.max(window.screen.width, window.screen.height)
     ) / Math.log(2));
     let size = new Vector2(2**targetRes, 2**(targetRes-1));
@@ -277,12 +277,13 @@ let worldFunctions = `
     float pure = 0.95;
     float less = 0.85;
     float none = 0.8;
-    float offset = 1.0 * (smoothstep(less, pure, abs(pos.y)) - 0.5);
-    offset -=
-      // Below less.
-      (1.0 - step(less, abs(pos.y))) *
-      // Gradually make the negative more extreme until none.
-      (1.0 - smoothstep(none, less, abs(pos.y)));
+    float offset = 5.0 * (abs(pos.y) - 0.9);
+    // float offset = 1.0 * (smoothstep(less, pure, abs(pos.y)) - 0.5);
+    // offset -=
+    //   // Below less.
+    //   (1.0 - step(less, abs(pos.y))) *
+    //   // Gradually make the negative more extreme until none.
+    //   (1.0 - smoothstep(none, less, abs(pos.y)));
     float value = worldValue(pos, offset);
     return value;
   }
@@ -293,12 +294,15 @@ let worldFunctions = `
     float gray = value + low * (1.0 - value);
     vec3 color = vec3(gray);
     float land = landValue(pos);
+    float alpha;
     if (land <= 0.0) {
       color *= vec3(0.95, 0.95, 1.0);
+      alpha = step(low, gray);
     } else {
       color *= 0.95;
+      alpha = smoothstep(-1.0, 1.0, (gray - 0.8) * 1e2);
     }
-    return vec4(color, step(low, gray));
+    return vec4(color, alpha);
   }
 
   float iceElevation(vec3 pos) {
@@ -332,11 +336,21 @@ let worldFunctions = `
     float sub = 0.5 * step(0.0, -value) + step(0.0, value);
     float red = 0.4 * unit * sub;
     float green = 0.8 * unit * sub;
-    if (desert > forest && value > 0.0) {
-      red += (1.0 - red) * 0.5;
-    }
     float blue = 0.7 * step(0.0, -value) + 0.1 * step(0.0, value);
-    return vec4(red, green, blue, 1.0);
+    vec3 color = vec3(red, green, blue);
+    if (value > 0.0) {
+      // Colors picked from a NASA Blue Marble picture.
+      vec3 desertColor = 0.8 * vec3(216, 186, 145) / 255.0;
+      vec3 plantColor = vec3(99, 136, 45) / 255.0;
+      forest = 0.25 * smoothstep(-0.2, 0.0, forest) + 0.75;
+      plantColor *= forest;
+      desert = smoothstep(-0.05, 0.05, desert);
+      color = mix(plantColor, desertColor, desert);
+    } else {
+      color += (1.0 - color) * 0.1;
+      color *= 0.6;
+    }
+    return vec4(color, 1.0);
   }
 
   vec4 worldColor(vec3 pos) {
