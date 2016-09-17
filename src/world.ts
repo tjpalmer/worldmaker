@@ -23,7 +23,8 @@ export class Stage {
     );
     textureCamera.position.z = 1;
     // Texture size.
-    let targetRes = 1 + Math.ceil(Math.log(
+    // TODO(tjp): Change from 0 to 1 for full res.
+    let targetRes = 0 + Math.ceil(Math.log(
       Math.max(window.screen.width, window.screen.height)
     ) / Math.log(2));
     let size = new Vector2(2**targetRes, 2**(targetRes-1));
@@ -112,7 +113,7 @@ export class Stage {
       displacementMap: this.elevationTarget.texture,
       displacementScale: elevationScale,
       map: this.target.texture,
-      shininess: 50,
+      shininess: 90,
       specularMap: this.specularTarget.texture,
     });
     let sphere = this.sphere = new Mesh(sphereGeometry, textureMaterial);
@@ -324,10 +325,16 @@ let worldFunctions = `
   vec4 landColor(vec3 pos) {
     // TODO Change this into clear gradients and boundaries.
     float value = landValue(pos);
+    float desert = worldValue(pos - 19.0, 0.0);
+    desert -= abs(abs(pos.y) - 0.3) * 2.0;
+    float forest = worldValue(pos - 39.0, 0.0);
     float unit = 0.5 * (value + 1.0);
     float sub = 0.5 * step(0.0, -value) + step(0.0, value);
     float red = 0.4 * unit * sub;
     float green = 0.8 * unit * sub;
+    if (desert > forest && value > 0.0) {
+      red += (1.0 - red) * 0.5;
+    }
     float blue = 0.7 * step(0.0, -value) + 0.1 * step(0.0, value);
     return vec4(red, green, blue, 1.0);
   }
