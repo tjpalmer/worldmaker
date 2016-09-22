@@ -59,7 +59,8 @@ export class Stage {
 
   resize() {
     // TODO Use canvas client width and height once I get layout working.
-    let size = {x: window.innerWidth, y: window.innerHeight};
+    let view = document.body.querySelector('.view');
+    let size = {x: view.clientWidth, y: view.clientHeight};
     this.camera.aspect = size.x / size.y;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(size.x, size.y);
@@ -78,7 +79,7 @@ export class Stage {
     // js tutorial code for now.
     // Renderer.
     let renderer = this.renderer = new WebGLRenderer({antialias: true});
-    document.body.appendChild(renderer.domElement);
+    document.body.querySelector('.view').appendChild(renderer.domElement);
     // Camera.
     this.camera = new PerspectiveCamera(
       35, window.innerWidth / window.innerHeight, 0.1, 1000
