@@ -24,7 +24,7 @@ export class Stage {
     textureCamera.position.z = 1;
     // Texture size.
     // TODO(tjp): Change from 0 to 1 for full res.
-    let targetRes = 1 + Math.ceil(Math.log(
+    let targetRes = -1 + Math.ceil(Math.log(
       Math.max(window.screen.width, window.screen.height)
     ) / Math.log(2));
     let size = new Vector2(2**targetRes, 2**(targetRes-1));

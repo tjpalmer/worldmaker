@@ -1,7 +1,9 @@
 body {
   align-content: stretch;
   align-items: stretch;
+  background: black;
   bottom: 0;
+  color: white;
   display: flex;
   left: 0;
   margin: 0;
@@ -16,8 +18,20 @@ body {
 }
 
 .tools {
-  background: greenyellow;
   flex: 0;
+  font-size: 2em;
+  padding: 0.1em 0;
+}
+
+.tools > * {
+  border: 0.1em solid black;
+  margin: 0.1em 0;
+  padding: 0.2em 0.4em;
+}
+
+.tools > .selected {
+    border: 0.1em solid white;
+    border-radius: 0.2em;
 }
 
 .view {
