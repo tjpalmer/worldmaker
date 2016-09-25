@@ -17,23 +17,27 @@ body {
   flex: 0;
 }
 
-.tools {
+.toolbox {
   flex: 0;
   font-size: 2em;
   padding: 0.1em 0;
 }
 
-.tools input {
+.toolbox i {
+  margin-top: 2em;
+}
+
+.toolbox input {
   display: none;
 }
 
-.tools > * {
+.toolbox > * {
   border: 0.1em solid black;
   margin: 0.1em 0;
   padding: 0.2em 0.4em;
 }
 
-.tools > .selected {
+.toolbox > .selected {
     border: 0.1em solid white;
     border-radius: 0.2em;
 }
