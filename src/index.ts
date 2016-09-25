@@ -2,4 +2,5 @@
 // coming from different source files.
 
 export * from './control';
+export * from './toolbox';
 export * from './world';

@@ -1,4 +1,4 @@
-import {Stage} from './';
+import {Stage, Toolbox} from './';
 import './index.css';
 
 window.onload = main;
@@ -7,6 +7,7 @@ window.onload = main;
 declare function require(name: string): any;
 
 function main() {
+  new Toolbox(document.body);
   let stage = new Stage();
   stage.start();
 }

@@ -23,6 +23,10 @@ body {
   padding: 0.1em 0;
 }
 
+.tools input {
+  display: none;
+}
+
 .tools > * {
   border: 0.1em solid black;
   margin: 0.1em 0;
