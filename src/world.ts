@@ -13,6 +13,7 @@ export class Stage {
     // Texture scene.
     let textureScene = new Scene();
     let textureMaterial = new ShaderMaterial({
+      uniforms: {seed: {value: this.seed}},
       vertexShader: positionTextureShader,
     });
     textureScene.add(new Mesh(
@@ -30,8 +31,9 @@ export class Stage {
     let size = new Vector2(2**targetRes, 2**(targetRes-1));
     // Render textures.
     let renderTexture = (name: string, shader: string, toScreen = false) => {
-      (<any>this)[name] =
-        new WebGLRenderTarget(size.x, size.y);
+      if (!(<any>this)[name]) {
+        (<any>this)[name] = new WebGLRenderTarget(size.x, size.y);
+      }
       textureMaterial.fragmentShader = shader;
       textureMaterial.needsUpdate = true;
       this.renderer.render(textureScene, textureCamera, (<any>this)[name]);
@@ -68,6 +70,8 @@ export class Stage {
       this.render();
     }
   }
+
+  seed = new Vector3();
 
   scene: Scene;
 
@@ -248,6 +252,8 @@ let noiseFunctions = `
 `;
 
 let worldFunctions = `
+  uniform vec3 seed;
+
   varying vec3 position3d;
 
   ${noiseFunctions}
@@ -255,13 +261,14 @@ let worldFunctions = `
   float landValue(vec3 pos);
 
   float worldValue(vec3 pos, float offset) {
-    pos += 0.0;
+    pos += seed;
     float value =
       0.5 * snoise(1.0 * pos)
       + 0.3 * snoise(2.0 * pos)
       + 0.2 * snoise(4.0 * pos)
       + 0.1 * snoise(8.0 * pos)
       // Make some places noisier than others.
+      // TODO Semi-independent noise for height of each frequency.
       + 0.5 * (snoise(4.0 * (pos + 1e3)) + 1.2) * (
         + 0.1 * snoise(16.0 * pos)
         + 0.05 * snoise(32.0 * pos)
@@ -320,7 +327,7 @@ let worldFunctions = `
   }
 
   float landValue(vec3 pos) {
-    return worldValue(pos, -0.1);
+    return worldValue(pos, -0.15);
   }
 
   float landElevation(vec3 pos) {
