@@ -338,7 +338,7 @@ let worldFunctions = `
     // TODO Change this into clear gradients and boundaries.
     float value = landValue(pos);
     float desert = worldValue(pos - 19.0, 0.05);
-    desert -= abs(abs(pos.y) - 0.3) * 2.0;
+    desert -= abs(abs(pos.y) - 0.35) * 2.0;
     float forest = worldValue(pos - 39.0, 0.0);
     float unit = 0.5 * (value + 1.0);
     float sub = 0.5 * step(0.0, -value) + step(0.0, value);
@@ -352,7 +352,7 @@ let worldFunctions = `
       vec3 plantColor = vec3(99, 136, 45) / 255.0;
       forest = 0.25 * smoothstep(-0.3, 0.0, forest) + 0.75;
       plantColor *= forest;
-      desert = smoothstep(-0.1, 0.1, desert);
+      desert = smoothstep(-0.15, 0.15, desert);
       color = mix(plantColor, desertColor, desert);
     } else {
       color += (1.0 - color) * 0.1;
