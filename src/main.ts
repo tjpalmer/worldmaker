@@ -7,7 +7,7 @@ window.onload = main;
 declare function require(name: string): any;
 
 function main() {
-  new Toolbox(document.body);
   let stage = new Stage();
+  new Toolbox(document.body, stage);
   stage.start();
 }

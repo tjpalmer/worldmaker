@@ -12,15 +12,9 @@ body {
   top: 0;
 }
 
-.panels {
-  background: dodgerblue;
-  flex: 0;
-}
-
-.toolbox {
+.panel {
   flex: 0;
   font-size: 2em;
-  padding: 0.1em 0;
 }
 
 .toolbox i {
@@ -31,10 +25,9 @@ body {
   display: none;
 }
 
-.toolbox > * {
+.panel > * {
   border: 0.1em solid black;
-  margin: 0.1em 0;
-  padding: 0.2em 0.4em;
+  padding: 0.2em 0.3em;
 }
 
 .toolbox > .selected {

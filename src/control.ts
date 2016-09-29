@@ -84,8 +84,8 @@ export class Control {
   }
 
   wheel(event: WheelEvent) {
-    // My browser gives -100 for up and 100 for down.
-    let amount = event.deltaY / 100;
+    // Different browsers are different, so just ignore the amount.
+    let amount = Math.sign(event.deltaY);
     let surface = this.surface();
     let altitude = this.radius - surface;
     altitude *= 1.0 + amount * 1e-1;
