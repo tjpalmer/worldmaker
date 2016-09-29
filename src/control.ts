@@ -1,5 +1,5 @@
 import {Stage} from './';
-import {Vector2, Vector3} from 'three';
+import {Raycaster, Vector2, Vector3} from 'three';
 
 export class Control {
 
@@ -21,9 +21,51 @@ export class Control {
     return this.radius - this.surface();
   }
 
+  calculateIntersection(point: Vector2) {
+    let {origin, direction} = this.calculateRay(point);
+    let {x, y, z} = origin;
+    let {x: u, y: v, z: w} = direction;
+    // Swap a and b out with real values if we vary later.
+    let a = 1, b = 1;
+    // Calculate distance to intersection.
+    // See http://gis.stackexchange.com/questions/20780
+    let a2 = a*a, b2 = b*b;
+    let c = b2 * (u*u + v*v) + a2 * w*w;
+    let d = b2 * (u*x + v*y) + a2 * w*z;
+    let e = b2 * (x*x + y*y - a2) + a2 * z*z;
+    let t = -1/c * (d + Math.sqrt(d*d - c*e));
+    // And now the intersection itself.
+    let intersection = Number.isNaN(t) ?
+      undefined :
+      // This modifies our vectors, but we made them and don't need them later.
+      origin.add(direction.multiplyScalar(t));
+    // console.log(origin, direction, intersection);
+    return intersection;
+  }
+
+  calculateRay(point: Vector2) {
+    let raycaster = new Raycaster();
+    // TODO Extract point transform function.
+    point = point.clone().divide(
+      new Vector2(
+        this.stage.renderer.domElement.offsetWidth,
+        this.stage.renderer.domElement.offsetHeight,
+      )
+    ).multiplyScalar(2).addScalar(-1).multiply(new Vector2(1, -1));
+    // console.log(point);
+    raycaster.setFromCamera(point, this.stage.camera);
+    return raycaster.ray;
+  }
+
   last: Vector2;
 
   mouseDown(event: MouseEvent) {
+    // TODO Different tools by toolbox selection, where this "Control" is a
+    // TODO camera and/or rotation tool.
+    let intersection =
+      this.calculateIntersection(new Vector2(event.offsetX, event.offsetY));
+    console.log(intersection);
+    // Track for camera rotation.
     this.last.set(event.screenX, event.screenY);
     this.active = true;
   }
