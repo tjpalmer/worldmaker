@@ -64,7 +64,7 @@ export class Control {
     // TODO camera and/or rotation tool.
     let intersection =
       this.calculateIntersection(new Vector2(event.offsetX, event.offsetY));
-    console.log(intersection);
+    // console.log(intersection);
     // Track for camera rotation.
     this.last.set(event.screenX, event.screenY);
     this.active = true;

@@ -17,6 +17,10 @@ body {
   font-size: 2em;
 }
 
+.toolbox {
+  display: none;
+}
+
 .toolbox i {
   margin-top: 2em;
 }

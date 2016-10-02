@@ -25,7 +25,7 @@ export class Stage {
     textureCamera.position.z = 1;
     // Texture size.
     // TODO(tjp): Change from 0 to 1 for full res.
-    let targetRes = -1 + Math.ceil(Math.log(
+    let targetRes = 0 + Math.ceil(Math.log(
       Math.max(window.screen.width, window.screen.height)
     ) / Math.log(2));
     let size = new Vector2(2**targetRes, 2**(targetRes-1));
@@ -60,15 +60,17 @@ export class Stage {
   renderer: WebGLRenderer;
 
   resize() {
-    // TODO Use canvas client width and height once I get layout working.
-    let view = document.body.querySelector('.view');
-    let size = {x: view.clientWidth, y: view.clientHeight};
-    this.camera.aspect = size.x / size.y;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize(size.x, size.y);
-    if (this.scene) {
-      this.render();
-    }
+    this.renderer.setSize(1, 1);
+    window.setTimeout(() => {
+      let view = document.body.querySelector('.view');
+      let size = {x: view.clientWidth, y: view.clientHeight};
+      this.camera.aspect = size.x / size.y;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(size.x, size.y);
+      if (this.scene) {
+        this.render();
+      }
+    }, 0);
   }
 
   seed = new Vector3();
